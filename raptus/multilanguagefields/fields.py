@@ -181,18 +181,30 @@ class MultilanguageFieldMixin(Base):
             classgenerator = ClassGenerator()
             generator.makeMethod(type(instance.aq_base), self, 'r', self.getName())
             classgenerator.updateSecurity(type(instance.aq_base), self, 'r', self.getName())
-    
+
     def _get_lang(self, instance, **kwargs):
+        request = aq_get(instance, 'REQUEST')
+        # check for forced value
+        # this is usefull whenever you need to get a value
+        # different from the one used by current user
+        # eg: print stuff in a different language
+        if hasattr(request, 'get'):
+            # during upgrade steps you can get:
+            # <Special Object Used to Force Acquisition>'
+            forced_lang = request.get('force-multilang-get') or \
+                             kwargs.get('force-multilang-get') or None
+            if forced_lang:
+                return forced_lang
         if kwargs.has_key('lang'):
             return kwargs['lang']
         try:
-            lang = instance.REQUEST.get('lang', None)
+            lang = request.get('lang', None)
             if lang is not None:
                 return lang
         except:
             pass
         return self._getCurrentLanguage(instance)
-    
+
     security.declarePrivate('get')
     def get(self, instance, **kwargs):
         if self._v_lang:
